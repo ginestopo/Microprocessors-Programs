@@ -1,0 +1,45 @@
+    LJMP START
+    ORG 100H
+
+START:
+    LCALL LCD_INIT
+    LCALL LCD_CLR
+
+BLINKLED:
+    CLR P1.7 ;turn on the led on line 7 of port 1
+
+    MOV A,#10
+    LCALL DELAY100
+
+    SETB P1.7
+
+    MOV A,#10
+    LCALL DELAY100
+
+    SJMP BLINKLED
+
+    LCALL FINISH_PROGRAMME
+
+
+
+DELAY100:
+    MOV R7, #2 ;we repeat 50ms two times to get a 100ms delay
+MS100:
+MS50:
+    MOV TMOD, #00000001B ;timer 0, mode 1 (16bits)
+    MOV TH0, #76 ;high part to 76
+    MOV TL0, #0 ;low part to 0
+    SETB TR0
+DELAY: JNB TF0, DELAY ;if timer flag is set, finish
+    CLR TR0
+    CLR TF0
+    ;--------------- from MS50 to here makes 50ms
+    DJNZ R7, MS100 ;if R7 is not zero, repeat 50ms again
+    ;--------------- from MS100 to here makes 100ms
+    DEC A           ;this makes the accumulator specify the duration when calling delay100
+    JNZ DELAY100    ;this makes the accumulator specify the duration when calling delay100
+    RET
+
+FINISH_PROGRAMME:
+    SJMP $
+    NOP

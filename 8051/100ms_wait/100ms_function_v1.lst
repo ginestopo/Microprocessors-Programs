@@ -1,0 +1,45 @@
+     1  0000: 02 01 00      LJMP START
+     2  0100:               ORG 100H
+     3                  
+     4  0100:           START:
+     5  0100: 12 81 08      LCALL LCD_INIT
+     6  0103: 12 81 0C      LCALL LCD_CLR
+     7                  
+     8  0106:           BLINKLED:
+     9  0106: C2 97         CLR P1.7 ;turn on the led on line 7 of port 1
+    10                  
+    11  0108: 74 0A         MOV A,#10
+    12  010A: 12 01 19      LCALL DELAY100
+    13                  
+    14  010D: D2 97         SETB P1.7
+    15                  
+    16  010F: 74 0A         MOV A,#10
+    17  0111: 12 01 19      LCALL DELAY100
+    18                  
+    19  0114: 80 F0         SJMP BLINKLED
+    20                  
+    21  0116: 12 01 33      LCALL FINISH_PROGRAMME
+    22                  
+    23                  
+    24                  
+    25  0119:           DELAY100:
+    26  0119: 7F 02         MOV R7, #2 ;we repeat 50ms two times to get a 100ms delay
+    27  011B:           MS100:
+    28  011B:           MS50:
+    29  011B: 75 89 01      MOV TMOD, #00000001B ;timer 0, mode 1 (16bits)
+    30  011E: 75 8C 4C      MOV TH0, #76 ;high part to 76
+    31  0121: 75 8A 00      MOV TL0, #0 ;low part to 0
+    32  0124: D2 8C         SETB TR0
+    33  0126: 30 8D FD  DELAY: JNB TF0, DELAY ;if timer flag is set, finish
+    34  0129: C2 8C         CLR TR0
+    35  012B: C2 8D         CLR TF0
+    36                      ;--------------- from MS50 to here makes 50ms
+    37  012D: DF EC         DJNZ R7, MS100 ;if R7 is not zero, repeat 50ms again
+    38                      ;--------------- from MS100 to here makes 100ms
+    39  012F: 14            DEC A           ;this makes the accumulator specify the duration when calling delay100
+    40  0130: 70 E7         JNZ DELAY100    ;this makes the accumulator specify the duration when calling delay100
+    41  0132: 22            RET
+    42                  
+    43  0133:           FINISH_PROGRAMME:
+    44  0133: 80 FE         SJMP $
+    45  0135: 00            NOP

@@ -1,0 +1,181 @@
+     1  0000: 02 01 00      LJMP START
+     2  0100:               ORG 100H
+     3                  
+     4  0100:           START:
+     5  0100: 12 81 08      LCALL LCD_INIT
+     6  0103: 12 81 0C      LCALL LCD_CLR
+     7                  
+     8  0106: 12 01 57      LCALL SET_DISPLAY
+     9                  
+    10  0109:           START_COUNT:
+    11  0109: 12 01 76      LCALL DEC_SEC ;decrement seconds
+    12                  
+    13  010C:           BUZZER:
+    14                      ;display 00:00
+    15  010C: 12 81 0C      LCALL LCD_CLR
+    16                  
+    17  010F: EF            MOV A,R7
+    18  0110: 12 01 4F      LCALL BCD
+    19  0113: 12 81 04      LCALL WRITE_HEX  ;print minutes
+    20                  
+    21  0116: 74 3A         MOV A,#':'
+    22  0118: 12 81 02      LCALL WRITE_DATA  ;print ":"
+    23                  
+    24  011B: EB            MOV A,R3
+    25  011C: 12 01 4F      LCALL BCD
+    26  011F: 12 81 04      LCALL WRITE_HEX  ;print seconds
+    27                  
+    28                      ;make the led blink
+    29  0122: C2 97         CLR P1.7 ;turn on the led on line 7 of port 1
+    30                  
+    31  0124: 74 0A         MOV A,#10
+    32  0126: 12 01 35      LCALL DELAY100
+    33                  
+    34  0129: D2 97         SETB P1.7
+    35                  
+    36  012B: 74 0A         MOV A,#10
+    37  012D: 12 01 35      LCALL DELAY100
+    38                  
+    39  0130: 80 DA         SJMP BUZZER
+    40                  
+    41  0132: 12 01 C3      LCALL FINISH_PROGRAMME
+    42                  
+    43                  
+    44                  
+    45                  
+    46                  
+    47                  
+    48                  
+    49                  
+    50                  
+    51                  
+    52                  ;___________________________________________________________________
+    53                                          ; 100 MS DELAY FUNCTION
+    54                  ;___________________________________________________________________
+    55  0135:           DELAY100:
+    56  0135: 79 02         MOV R1, #2 ;we repeat 50ms two times to get a 100ms delay
+    57  0137:           MS100:
+    58  0137:           MS50:
+    59  0137: 75 89 01      MOV TMOD, #00000001B ;timer 0, mode 1 (16bits)
+    60  013A: 75 8C 4C      MOV TH0, #76 ;high part to 76
+    61  013D: 75 8A 00      MOV TL0, #0 ;low part to 0
+    62  0140: D2 8C         SETB TR0
+    63  0142: 30 8D FD  DELAY: JNB TF0, DELAY ;if timer flag is set, finish
+    64  0145: C2 8C         CLR TR0
+    65  0147: C2 8D         CLR TF0
+    66                      ;--------------- from MS50 to here makes 50ms
+    67  0149: D9 EC         DJNZ R1, MS100 ;if R7 is not zero, repeat 50ms again
+    68                      ;--------------- from MS100 to here makes 100ms
+    69  014B: 14            DEC A           ;this makes the accumulator specify the duration when calling delay100
+    70  014C: 70 E7         JNZ DELAY100    ;this makes the accumulator specify the duration when calling delay100
+    71  014E: 22            RET
+    72                  
+    73                  
+    74                  
+    75                  ;___________________________________________________________________
+    76                                        ; convert to human readable FUNCION
+    77                  ;___________________________________________________________________
+    78  014F:           BCD:
+    79  014F: 75 F0 0A      MOV B,#10
+    80  0152: 84            DIV AB
+    81  0153: C4            SWAP A
+    82  0154: 25 F0         ADD A,B
+    83                  
+    84  0156: 22            RET
+    85                  
+    86                  
+    87                  
+    88                  ;___________________________________________________________________
+    89                                        ; SET_DISPLAY FUNTION
+    90                  ;___________________________________________________________________
+    91  0157:           SET_DISPLAY:
+    92  0157: 12 81 1C      LCALL WAIT_KEY
+    93  015A: FF            MOV R7, A ;we storage the minutes in R7
+    94  015B: 12 01 4F      LCALL BCD
+    95  015E: 12 81 04      LCALL WRITE_HEX ;print the first operand R0
+    96                  
+    97  0161: 74 3A         MOV A,#':'
+    98  0163: 12 81 02      LCALL WRITE_DATA
+    99                  
+   100  0166: 12 81 1C      LCALL WAIT_KEY
+   101  0169: FB            MOV R3, A ;we storage the seonds in R3
+   102  016A: 12 01 4F      LCALL BCD
+   103  016D: 12 81 04      LCALL WRITE_HEX ;print the first operand R0
+   104                  
+   105  0170: 74 0A         MOV A,#10
+   106  0172: 12 01 35      LCALL DELAY100  ;wait for 1 second before starting
+   107                  
+   108  0175: 22            RET
+   109                  
+   110                  
+   111                  
+   112                  ;___________________________________________________________________
+   113                                            ; DEC_SEC
+   114                  ;___________________________________________________________________
+   115  0176:           DEC_SEC:
+   116  0176: BB 00 0B      CJNE R3,#0,R3_NOT_ZERO
+   117  0179: 12 01 AC      LCALL UPD_SCREEN_ZERO ;is called and then returns here
+   118                  
+   119                  
+   120  017C: BF 00 05      CJNE R7,#0,R3_NOT_ZERO
+   121  017F: 7B 00         MOV R3,#0
+   122  0181: 02 01 0C      LJMP BUZZER
+   123                  
+   124  0184:           R3_NOT_ZERO:
+   125  0184: 02 01 87      LJMP UPD_SCREEN ;is called but does not return here
+   126                  
+   127                  ;___________________________________________________________________
+   128                                            ; UPD_SCREEN
+   129                  ;___________________________________________________________________
+   130  0187:           UPD_SCREEN:
+   131  0187: 12 81 0C      LCALL LCD_CLR
+   132                  
+   133  018A: EF            MOV A,R7
+   134  018B: 12 01 4F      LCALL BCD
+   135  018E: 12 81 04      LCALL WRITE_HEX  ;print minutes
+   136                  
+   137  0191: 74 3A         MOV A,#':'
+   138  0193: 12 81 02      LCALL WRITE_DATA  ;print ":"
+   139                  
+   140  0196: EB            MOV A,R3
+   141  0197: 12 01 4F      LCALL BCD
+   142  019A: 12 81 04      LCALL WRITE_HEX  ;print seconds
+   143                  
+   144  019D: 74 0A         MOV A,#10
+   145  019F: 12 01 35      LCALL DELAY100
+   146                  
+   147                      ;if seconds are zero we will switch to 59 seconds
+   148  01A2: EB            MOV A,R3
+   149  01A3: 70 03         JNZ DEC_DIRECT  ;if seconds are zero switch to 59 (we substract 1 in DEC_DIRECT)
+   150  01A5: 7B 3C         MOV R3,#60
+   151  01A7: 1F            DEC R7          ;if seconds are 59 then we substract 1 to minutes
+   152  01A8:           DEC_DIRECT:
+   153  01A8: 1B            DEC R3
+   154                  
+   155  01A9: 02 01 09      LJMP START_COUNT
+   156                  
+   157                  
+   158                  ;___________________________________________________________________
+   159                                            ; UPD_SCREEN_ZERO
+   160                  ;___________________________________________________________________
+   161  01AC:           UPD_SCREEN_ZERO:
+   162  01AC: 12 81 0C      LCALL LCD_CLR
+   163                  
+   164  01AF: EF            MOV A,R7
+   165  01B0: 12 01 4F      LCALL BCD
+   166  01B3: 12 81 04      LCALL WRITE_HEX  ;print minutes
+   167                  
+   168  01B6: 74 3A         MOV A,#':'
+   169  01B8: 12 81 02      LCALL WRITE_DATA  ;print ":"
+   170                  
+   171  01BB: EB            MOV A,R3
+   172  01BC: 12 01 4F      LCALL BCD
+   173  01BF: 12 81 04      LCALL WRITE_HEX  ;print seconds
+   174                  
+   175  01C2: 22            RET
+   176                  
+   177                  
+   178                  
+   179  01C3:           FINISH_PROGRAMME:
+   180  01C3: 80 FE         SJMP $
+   181  01C5: 00            NOP

@@ -1,0 +1,181 @@
+    LJMP START
+    ORG 100H
+
+START:
+    LCALL LCD_INIT
+    LCALL LCD_CLR
+
+    LCALL SET_DISPLAY
+
+START_COUNT:
+    LCALL DEC_SEC ;decrement seconds
+
+BUZZER:
+    ;display 00:00
+    LCALL LCD_CLR
+
+    MOV A,R7
+    LCALL BCD
+    LCALL WRITE_HEX  ;print minutes
+
+    MOV A,#':'
+    LCALL WRITE_DATA  ;print ":"
+
+    MOV A,R3
+    LCALL BCD
+    LCALL WRITE_HEX  ;print seconds
+
+    ;make the led blink
+    CLR P1.7 ;turn on the led on line 7 of port 1
+
+    MOV A,#10
+    LCALL DELAY100
+
+    SETB P1.7
+
+    MOV A,#10
+    LCALL DELAY100
+
+    SJMP BUZZER
+
+    LCALL FINISH_PROGRAMME
+
+
+
+
+
+
+
+
+
+
+;___________________________________________________________________
+                        ; 100 MS DELAY FUNCTION
+;___________________________________________________________________
+DELAY100:
+    MOV R1, #2 ;we repeat 50ms two times to get a 100ms delay
+MS100:
+MS50:
+    MOV TMOD, #00000001B ;timer 0, mode 1 (16bits)
+    MOV TH0, #76 ;high part to 76
+    MOV TL0, #0 ;low part to 0
+    SETB TR0
+DELAY: JNB TF0, DELAY ;if timer flag is set, finish
+    CLR TR0
+    CLR TF0
+    ;--------------- from MS50 to here makes 50ms
+    DJNZ R1, MS100 ;if R7 is not zero, repeat 50ms again
+    ;--------------- from MS100 to here makes 100ms
+    DEC A           ;this makes the accumulator specify the duration when calling delay100
+    JNZ DELAY100    ;this makes the accumulator specify the duration when calling delay100
+    RET
+
+
+
+;___________________________________________________________________
+                      ; convert to human readable FUNCION
+;___________________________________________________________________
+BCD:
+    MOV B,#10
+    DIV AB
+    SWAP A
+    ADD A,B
+
+    RET
+
+
+
+;___________________________________________________________________
+                      ; SET_DISPLAY FUNTION
+;___________________________________________________________________
+SET_DISPLAY:
+    LCALL WAIT_KEY
+    MOV R7, A ;we storage the minutes in R7
+    LCALL BCD
+    LCALL WRITE_HEX ;print the first operand R0
+
+    MOV A,#':'
+    LCALL WRITE_DATA
+
+    LCALL WAIT_KEY
+    MOV R3, A ;we storage the seonds in R3
+    LCALL BCD
+    LCALL WRITE_HEX ;print the first operand R0
+
+    MOV A,#10
+    LCALL DELAY100  ;wait for 1 second before starting
+
+    RET
+
+
+
+;___________________________________________________________________
+                          ; DEC_SEC
+;___________________________________________________________________
+DEC_SEC:
+    CJNE R3,#0,R3_NOT_ZERO
+    LCALL UPD_SCREEN_ZERO ;is called and then returns here
+
+
+    CJNE R7,#0,R3_NOT_ZERO
+    MOV R3,#0
+    LJMP BUZZER
+
+R3_NOT_ZERO:
+    LJMP UPD_SCREEN ;is called but does not return here
+
+;___________________________________________________________________
+                          ; UPD_SCREEN
+;___________________________________________________________________
+UPD_SCREEN:
+    LCALL LCD_CLR
+
+    MOV A,R7
+    LCALL BCD
+    LCALL WRITE_HEX  ;print minutes
+
+    MOV A,#':'
+    LCALL WRITE_DATA  ;print ":"
+
+    MOV A,R3
+    LCALL BCD
+    LCALL WRITE_HEX  ;print seconds
+
+    MOV A,#10
+    LCALL DELAY100
+
+    ;if seconds are zero we will switch to 59 seconds
+    MOV A,R3
+    JNZ DEC_DIRECT  ;if seconds are zero switch to 59 (we substract 1 in DEC_DIRECT)
+    MOV R3,#60
+    DEC R7          ;if seconds are 59 then we substract 1 to minutes
+DEC_DIRECT:
+    DEC R3
+
+    LJMP START_COUNT
+
+
+;___________________________________________________________________
+                          ; UPD_SCREEN_ZERO
+;___________________________________________________________________
+UPD_SCREEN_ZERO:
+    LCALL LCD_CLR
+
+    MOV A,R7
+    LCALL BCD
+    LCALL WRITE_HEX  ;print minutes
+
+    MOV A,#':'
+    LCALL WRITE_DATA  ;print ":"
+
+    MOV A,R3
+    LCALL BCD
+    LCALL WRITE_HEX  ;print seconds
+
+    RET
+
+
+
+FINISH_PROGRAMME:
+    SJMP $
+    NOP

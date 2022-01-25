@@ -1,0 +1,173 @@
+     1  0000: 02 01 00      LJMP START
+     2  0100:               ORG 100H
+     3                  
+     4  0100:           START:
+     5  0100: 12 81 08      LCALL LCD_INIT
+     6  0103: 12 81 0C      LCALL LCD_CLR
+     7                  
+     8  0106: 12 81 1C      LCALL WAIT_KEY ;we storage a value in A by text input
+     9  0109: F8            MOV R0,A  ;R0 has the first operand ------------------------------- R0 FIRST OPERAND
+    10                  
+    11  010A: 12 01 D3      LCALL BCD
+    12  010D: 12 81 04      LCALL WRITE_HEX ;print the first operand R0
+    13                  
+    14  0110: 12 81 1C      LCALL WAIT_KEY ;waiting for operation to perform
+    15                  
+    16  0113:           PLUS:
+    17  0113: B4 0A 0E      CJNE A, #10, MINUS  ;continue in this function if we selected the left arrow
+    18  0116: 74 2B         MOV A,#'+'
+    19  0118: 12 81 02      LCALL WRITE_DATA  ;print '+' operand
+    20                  
+    21  011B: 12 01 B4      LCALL GET_2ND_OPERAND
+    22                  
+    23  011E: E8            MOV A,R0 ;loading to acc the first operand because acc was overwritten
+    24  011F: 29            ADD A,R1 ;PLUS OPERATION
+    25  0120: FA            MOV R2,A ;we store in r2 the result -------------------------------- R2 RESULT stored
+    26                  
+    27  0121: 12 01 C9      LCALL PRINT_RESULT
+    28                  
+    29  0124:           MINUS:
+    30  0124: B4 0B 11      CJNE A, #11, MULTIPLY ;continue in this function if we selected the right arrow
+    31  0127: 74 2D         MOV A,#'-'
+    32  0129: 12 81 02      LCALL WRITE_DATA ;print '-' operand
+    33                  
+    34  012C: 12 01 B4      LCALL GET_2ND_OPERAND
+    35                  
+    36  012F: C3            CLR C ;clears the carry bit (just in case wasn't zero)
+    37                  
+    38  0130: E8            MOV A,R0 ;loading to acc the first operand because acc was overwritten
+    39  0131: 99            SUBB A,R1 ;MINUS OPERATION (A = A - C - Rn = A - Rn (we set C to zero))
+    40  0132: FA            MOV R2,A ;we store in r2 the result -------------------------------- R2 RESULT stored
+    41                  
+    42  0133: 40 71         JC CARRY_IN_SUBSTRACTION ;if we have a carry set, we have a negative result, we put minus
+    43  0135:           CONTINUE_MINUS:
+    44  0135: 12 01 C9      LCALL PRINT_RESULT
+    45                  
+    46  0138:           MULTIPLY:
+    47  0138: B4 0C 10      CJNE A, #12, DIVISION ;continue in this function if we selected the up arrow
+    48  013B: 74 2A         MOV A,#'*'
+    49  013D: 12 81 02      LCALL WRITE_DATA ;print '*' operand
+    50                  
+    51  0140: 12 01 B4      LCALL GET_2ND_OPERAND
+    52                  
+    53  0143: E8            MOV A,R0 ;loading to acc the first operand because acc was overwritten
+    54  0144: 89 F0         MOV B,R1
+    55  0146: A4            MUL AB ;Multiply A and B
+    56  0147: FA            MOV R2,A ;we store in r2 the result -------------------------------- R2 RESULT stored
+    57                  
+    58  0148: 12 01 C9      LCALL PRINT_RESULT
+    59                  
+    60  014B:           DIVISION:
+    61  014B: 74 2F         MOV A,#'/'
+    62  014D: 12 81 02      LCALL WRITE_DATA ;print '/' operand
+    63                  
+    64  0150: 12 01 B4      LCALL GET_2ND_OPERAND
+    65                  
+    66                      ;check if second operand is a zero. If R1==0 go to SHOW_ERROR, if not CONTINUE_DIVISION
+    67  0153: B9 00 03      CJNE R1, #0 , CONTINUE_DIVISION
+    68                  
+    69  0156: 12 01 76      LCALL SHOW_ERROR
+    70                  
+    71  0159:           CONTINUE_DIVISION:
+    72  0159: E8            MOV A,R0
+    73  015A: 89 F0         MOV B,R1
+    74  015C: 84            DIV AB ;A/B
+    75  015D: FA            MOV R2,A ;we store in r2 the result -------------------------------- R2 RESULT stored
+    76  015E: AB F0         MOV R3,B
+    77                  
+    78  0160: EA            MOV A,R2 ;move the result to the accumulator
+    79  0161: 12 01 D3      LCALL BCD ;we convert the digit in acumulator for something understandable
+    80  0164: 12 81 04      LCALL WRITE_HEX  ;print the acumulator----------------------------SOLUTION
+    81                  
+    82  0167: 74 52         MOV A,#'R' ;move the result to the accumulator
+    83  0169: 12 81 02      LCALL WRITE_DATA ;print the acumulator----------------------------SOLUTION
+    84                  
+    85  016C: EB            MOV A,R3 ;move the result to the accumulator
+    86  016D: 12 01 D3      LCALL BCD ;we convert the digit in acumulator for something understandable
+    87  0170: 12 81 04      LCALL WRITE_HEX  ;print the acumulator----------------------------SOLUTION
+    88  0173: 12 01 E6      LCALL FINISH_PROGRAMME
+    89                  
+    90                  
+    91                  
+    92                  
+    93                  ; _________________________________________
+    94                  ;             FUNCTIONS USED
+    95                  ; _________________________________________
+    96                  
+    97  0176:           SHOW_ERROR:
+    98  0176: 74 45         MOV A,#'E'
+    99  0178: 12 81 02      LCALL WRITE_DATA ;print the '-' sign
+   100  017B: 74 02         MOV A,#2
+   101  017D: 12 81 12      LCALL DELAY_100MS
+   102  0180: 74 52         MOV A,#'R'
+   103  0182: 12 81 02      LCALL WRITE_DATA ;print the '-' sign
+   104  0185: 74 02         MOV A,#2
+   105  0187: 12 81 12      LCALL DELAY_100MS
+   106  018A: 74 52         MOV A,#'R'
+   107  018C: 12 81 02      LCALL WRITE_DATA ;print the '-' sign
+   108  018F: 74 02         MOV A,#2
+   109  0191: 12 81 12      LCALL DELAY_100MS
+   110  0194: 74 4F         MOV A,#'O'
+   111  0196: 12 81 02      LCALL WRITE_DATA ;print the '-' sign
+   112  0199: 74 02         MOV A,#2
+   113  019B: 12 81 12      LCALL DELAY_100MS
+   114  019E: 74 52         MOV A,#'R'
+   115  01A0: 12 81 02      LCALL WRITE_DATA ;print the '-' sign
+   116                  
+   117  01A3: 12 01 E6      LCALL FINISH_PROGRAMME ;if the second operand is zero finish the programme
+   118                  
+   119                  
+   120  01A6:           CARRY_IN_SUBSTRACTION: ;prints a '-' if the result of substraction is < 0
+   121  01A6: 74 2D         MOV A,#'-'
+   122  01A8: 12 81 02      LCALL WRITE_DATA ;print the '-' sign
+   123  01AB: C3            CLR C
+   124                  
+   125  01AC: EA            MOV A, R2
+   126  01AD: F4        	  CPL A 	; 1's complement
+   127  01AE: 24 01     	  ADD A, #01H 	; 2's complement
+   128  01B0: FA        	  MOV R2,A
+   129                  
+   130                      ;RET DOES NOT WORK IN THIS CASE, ONLY WORKS WHEN THE FUNCION WAS CALLED WITH LCAL
+   131  01B1: 12 01 35      LCALL CONTINUE_MINUS
+   132                  
+   133  01B4:           GET_2ND_OPERAND:   ;gets the second operand, waits 0,5 sec and prints '='
+   134  01B4: 12 81 1C      LCALL WAIT_KEY ;we storage a value in A by text input
+   135  01B7: F9            MOV R1,A ;----------------------------------------------------------------R1 second operand stored
+   136                  
+   137  01B8: 12 01 D3      LCALL BCD
+   138  01BB: 12 81 04      LCALL WRITE_HEX ;print the second operand R1
+   139                  
+   140  01BE: 74 3D         MOV A,#'='
+   141  01C0: 12 81 02      LCALL WRITE_DATA ;print the '=' sign
+   142                  
+   143  01C3: 74 05         MOV A,#5
+   144  01C5: 12 81 12      LCALL DELAY_100MS ;wait for 0,5 sec to print result
+   145                  
+   146  01C8: 22            RET
+   147                  
+   148  01C9:           PRINT_RESULT:
+   149  01C9: EA            MOV A,R2 ;move the result to the accumulator
+   150  01CA: 12 01 D3      LCALL BCD ;we convert the digit in acumulator for something understandable
+   151  01CD: 12 81 04      LCALL WRITE_HEX  ;print the acumulator----------------------------SOLUTION
+   152                  
+   153  01D0: 12 01 E6      LCALL FINISH_PROGRAMME
+   154                  
+   155  01D3:           BCD:
+   156  01D3: 75 F0 64      MOV B,#100 ;detecting the hundreds
+   157  01D6: 84            DIV AB
+   158  01D7: 60 03         JZ BCD2
+   159  01D9: 12 81 04      LCALL WRITE_HEX
+   160  01DC:           BCD2:
+   161  01DC: E5 F0         MOV A,B
+   162  01DE: 75 F0 0A      MOV B,#10
+   163  01E1: 84            DIV AB
+   164  01E2: C4            SWAP A
+   165  01E3: 25 F0         ADD A,B
+   166                  
+   167  01E5: 22            RET
+   168                  
+   169                  
+   170                  
+   171  01E6:           FINISH_PROGRAMME:
+   172  01E6: 80 FE         SJMP $
+   173  01E8: 00            NOP
