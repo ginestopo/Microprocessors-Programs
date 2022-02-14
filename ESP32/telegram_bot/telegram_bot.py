@@ -1,6 +1,11 @@
 from machine import Pin
 from time import sleep
+import time
+import network
+from utelegram import Bot, Conversation  #telegram library
 
+TOKEN = "5167305140:AAGT6ZAw4_C25AK1r8WS_UrA7YISla8MG3w"
+bot = Bot(TOKEN)
 
 led = Pin(2,Pin.OUT)
 
@@ -20,7 +25,6 @@ def led_wifi_connected():
 
 
 def do_connect():
-    import network
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     if not wlan.isconnected():
@@ -34,10 +38,17 @@ def do_connect():
 
         led_wifi_connected()
 
+#--------Bot functionality-----------
+@bot.add_command_handler('start')
+def start(update):
+    print("/start received")
+    update.reply('hello Ginés, how are you doing?')
+#------------------------------------
+
 
 def main():
     do_connect()
-
+    #bot.start_loop()
 
 if __name__ == "__main__":
     main()
