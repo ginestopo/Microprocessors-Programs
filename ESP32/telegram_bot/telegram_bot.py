@@ -4,7 +4,7 @@ import time
 import network
 from utelegram import Bot, Conversation  #telegram library
 
-TOKEN = "5167305140:AAGT6ZAw4_C25AK1r8WS_UrA7YISla8MG3w"
+TOKEN = ""
 bot = Bot(TOKEN)
 
 led = Pin(2,Pin.OUT)
